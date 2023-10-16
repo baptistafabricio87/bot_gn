@@ -2,6 +2,8 @@
 Please make sure you install the bot with `pip install -e .`
 in order to get all the dependencies on your Python environment.
 """
+import os
+import pandas as pd
 from config import settings
 from botcity.core import DesktopBot
 
@@ -34,6 +36,17 @@ def action(bot, execution=None):
     login_sap(user=sap_user, password=sap_pswd)
     exec_transacao(codigo_transacao='ZGN103')
 
+    diretorio = r'C:\ArquivosSuspeitos'
+    arquivo = r'\GRP_GN.xlsx'
+    xlsx, file_open = load_file(diretorio=diretorio, arquivo=arquivo)
+
+    for linha in xlsx.values:
+        print(linha)
+        for celula in linha:
+            pass
+
+    file_open.close()
+
 
 def login_sap(user, password):
     """Executa e realiza login no SAP GUI.
@@ -45,9 +58,9 @@ def login_sap(user, password):
 
     bot.execute(r"saplogon.exe")
 
-    if bot.find_text("PD4", waiting_time=10000):
+    if bot.find_text( "PD4", waiting_time=10000):
         bot.double_click(wait_after=3000)
-    elif not bot.find_text("PD4_azul", waiting_time=10000):
+    elif not bot.find_text( "PD4_azul", waiting_time=10000):
         not_found("PD4")
     bot.double_click(wait_after=3000)
 
@@ -67,6 +80,26 @@ def exec_transacao(codigo_transacao):
 
     bot.type_keys(codigo_transacao)
     bot.key_enter()
+
+
+def load_file(diretorio, arquivo):
+    file = diretorio + arquivo
+
+    try:
+        os.path.exists(path=file)
+        with open(file, 'rb') as file_open:
+            print('Arquivo carregado:', file)
+
+        meus_dados = pd.read_excel(io=file, dtype='unicode')
+    except FileNotFoundError:
+        print('Arquivo não encontrado!')
+
+    # Renomeando coluna
+    meus_dados = meus_dados.rename(
+        columns={'Grupo - Mundo TIM GN': 'grp_cliente'}
+    )
+
+    return meus_dados, file_open
 
 
 def not_found(label):
