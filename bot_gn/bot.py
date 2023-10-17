@@ -73,6 +73,8 @@ def action(execution=None):
             print(f"{linha[0]} cadastrado com suceeso!")
             continue
 
+    # TODO Gerar logs do processamento.
+
     file_open.close()
 
 
