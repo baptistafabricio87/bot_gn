@@ -1,24 +1,18 @@
-"""WARNING:
-Please make sure you install the bot with `pip install -e .`
-in order to get all the dependencies on your Python environment.
-"""
 import os
 import logging as log
 import pandas as pd
-from config import settings
 from botcity.core import DesktopBot
-
-# Uncomment the line below for integrations with BotMaestro
-# Using the Maestro SDK
-# from botcity.maestro import *
+from dotenv import load_dotenv
 
 bot = DesktopBot()
 
+load_dotenv()
+
 log.basicConfig(
-    filename=r'C:\ArquivosSuspeitos\bot_gn.log',
-    encoding='utf-8',
-    format='%(asctime)s | %(levelname)s | %(message)s',
-    datefmt='%m/%d/%Y %I:%M:%S %p',
+    filename=r"C:\ArquivosSuspeitos\bot_gn.log",
+    encoding="utf-8",
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S %p",
     level=log.INFO,
 )
 
@@ -39,54 +33,12 @@ def action(execution=None):
     #     message="Task Finished OK."
     # )
 
-    sap_user = settings["sap_user"]
-    sap_pswd = settings["sap_pswd"]
+    sap_user = os.getenv("SAP_USER")
+    sap_pswd = os.getenv("SAP_PSWD")
 
     login_sap(user=sap_user, password=sap_pswd)
-    exec_transacao(codigo_transacao="ZGN103")
-
-    diretorio = r"C:\ArquivosSuspeitos"
-    arquivo = r"\GRP_GN.xlsx"
-
-    xlsx, file_open = load_file(diretorio=diretorio, arquivo=arquivo)
-
-    for linha in xlsx.values:
-        bot.paste(linha[0])
-        bot.key_f8(wait=100)
-
-        if bot.find_text("ja_esta_cadastrado", waiting_time=3000):
-            log.info(f"{linha[0]}, já está cadastrado.")
-            continue
-
-        if bot.find_text("campo_descricao", waiting_time=3000):
-            log.info(f"Cadastrando {linha[0]}")
-            bot.click_relative(98, 1)
-            bot.paste(linha[1], wait=100)
-            bot.type_down(wait=100)
-            bot.shift_tab(wait=100)
-            bot.paste(linha[2], wait=100)
-            bot.type_keys(keys=["ctrl", "s"])
-            bot.wait(200)
-
-            if bot.find_text(
-                "cliente_nao_cadastrado", waiting_time=3000
-            ):
-                log.warning(f"Cliente {linha[2]} não cadastrado no GN")
-                bot.key_esc()
-                if not bot.find_text(
-                    "encerrar_processamento", waiting_time=3000
-                ):
-                    not_found("encerrar_processamento")
-                bot.click_relative(38, 57)
-                log.error(f'Processamento encerrado para {linha[0]}')
-                continue
-
-            log.info(f"{linha[0]} cadastrado com suceeso!")
-            continue
-
-    # TODO Gerar logs do processamento.
-
-    file_open.close()
+    exec_transacao(transaction_code="ZGN103")
+    exec_grupo_gn()
 
 
 def login_sap(user, password):
@@ -99,52 +51,89 @@ def login_sap(user, password):
 
     bot.execute(r"saplogon.exe")
 
-    if bot.find_text("PD4", waiting_time=5000):
+    if bot.find_text("PD4", waiting_time=10000):
         bot.double_click(wait_after=3000)
-    elif not bot.find_text("PD4_azul", waiting_time=5000):
+    elif bot.find_text("PD4_azul", waiting_time=10000):
+        bot.double_click(wait_after=3000)
+    else:
         not_found("PD4")
-    bot.double_click(wait_after=2000)
 
     bot.paste(user)
-    bot.tab(wait=100)
+    bot.tab(wait=1000)
     bot.paste(password)
     bot.key_enter()
     bot.wait(1000)
 
 
-def exec_transacao(codigo_transacao):
+def exec_transacao(transaction_code):
     """Executa transacao SAP
 
     Args:
-        codigo_transacao (_str_): Codigo da transacao SAP
+        transaction_code (_str_): Codigo da transacao SAP
     """
 
     if not bot.find("campo_transacao", matching=0.97, waiting_time=5000):
         not_found("campo_transacao")
     bot.click_relative(40, 10)
+    bot.wait(1000)
+    bot.type_keys(transaction_code)
+    bot.key_enter(wait=1000)
 
-    bot.type_keys(codigo_transacao)
-    bot.key_enter()
 
-
-def load_file(diretorio, arquivo):
-    file = diretorio + arquivo
-
+def load_file(file_path):
     try:
-        os.path.exists(path=file)
-        with open(file, "rb") as file_open:
-            print("Arquivo carregado:", file)
+        os.path.exists(path=file_path)
+        with open(file_path, "rb") as file_open:
+            print("Arquivo carregado:", file_path)
 
-        meus_dados = pd.read_excel(io=file, dtype="unicode")
+        loaded_file = pd.read_excel(io=file_path, dtype="unicode")
+        # Renomeando coluna
+        loaded_file = loaded_file.rename(
+            columns={"Grupo - Mundo TIM GN": "grp_cliente"}
+        )
+
+        return loaded_file, file_open
     except FileNotFoundError:
         print("Arquivo não encontrado!")
 
-    # Renomeando coluna
-    meus_dados = meus_dados.rename(
-        columns={"Grupo - Mundo TIM GN": "grp_cliente"}
-    )
 
-    return meus_dados, file_open
+def exec_grupo_gn():
+    """Função de preenchimento de grupo GN - ZGN103"""
+
+    xlsx, file_open = load_file(file_path=r"C:\ArquivosSuspeitos\GRP_GN.xlsx")
+
+    for line in xlsx.values:
+        bot.paste(line[0])
+        bot.key_f8(wait=100)
+
+        if bot.find_text("ja_esta_cadastrado", waiting_time=10000):
+            log.info(f"{line[0]}, já está cadastrado.")
+            continue
+
+        if bot.find_text("campo_descricao", waiting_time=3000):
+            log.info(f"Cadastrando {line[0]}")
+            bot.click_relative(98, 1)
+            bot.paste(line[1], wait=100)
+            bot.type_down(wait=100)
+            bot.shift_tab(wait=100)
+            bot.paste(line[2], wait=100)
+            bot.type_keys(keys=["ctrl", "s"])
+            bot.wait(200)
+
+            if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
+                log.warning(f"Cliente {line[2]} não cadastrado no GN")
+                bot.key_esc()
+                if not bot.find_text(
+                    "encerrar_processamento", waiting_time=3000
+                ):
+                    not_found("encerrar_processamento")
+                bot.click_relative(38, 57)
+                log.error(f"Processamento encerrado para {line[0]}")
+                continue
+
+            log.info(f"{line[0]} cadastrado com suceeso!")
+            continue
+    file_open.close()
 
 
 def not_found(label):
