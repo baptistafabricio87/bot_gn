@@ -12,7 +12,6 @@ certifi==2023.7.22
 charset-normalizer==3.3.0
 comtypes==1.2.0
 distro==1.8.0
-dynaconf==3.2.3
 idna==3.4
 importlib-metadata==6.8.0
 MouseInfo==0.1.3
