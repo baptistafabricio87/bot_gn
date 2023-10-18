@@ -18,6 +18,7 @@ log.basicConfig(
 
 
 def action(execution=None):
+    """Função principal"""
     # Uncomment to silence Maestro errors when disconnected
     # if bot.maestro:
     #     bot.maestro.RAISE_NOT_CONNECTED = False
@@ -69,7 +70,7 @@ def exec_transacao(transaction_code):
     """Executa transacao SAP
 
     Args:
-        transaction_code (_str_): Codigo da transacao SAP
+        transaction_code (_str_): Codigo da transacao SAP.
     """
 
     if not bot.find("campo_transacao", matching=0.97, waiting_time=5000):
@@ -81,6 +82,12 @@ def exec_transacao(transaction_code):
 
 
 def load_file(file_path):
+    '''Carrega arquivo GRP_GN e o retorna para cadastro no SAP
+
+    Args:
+        file_path (_str_): Caminho do arquivo.
+    '''
+
     try:
         os.path.exists(path=file_path)
         with open(file_path, "rb") as file_open:
@@ -134,6 +141,14 @@ def exec_grupo_gn():
             log.info(f"{line[0]} cadastrado com suceeso!")
             continue
     file_open.close()
+
+    # Encerra SAP
+    bot.key_f12()
+    bot.hold_shift()
+    bot.key_f3()
+    bot.release_shift()
+    bot.tab()
+    bot.key_enter()
 
 
 def not_found(label):
