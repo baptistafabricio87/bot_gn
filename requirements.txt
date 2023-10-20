@@ -25,6 +25,7 @@ PyMsgBox==1.0.9
 pyperclip==1.8.2
 PyRect==0.2.0
 PyScreeze==0.1.27
+python-dotenv==1.0.0
 python-xlib==0.33
 pytweening==1.0.7
 pywin32==306
