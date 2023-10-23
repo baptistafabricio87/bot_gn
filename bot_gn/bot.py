@@ -9,7 +9,7 @@ bot = DesktopBot()
 load_dotenv()
 
 log.basicConfig(
-    filename=r"C:\ArquivosSuspeitos\bot_gn.log",
+    filename=r"C:\Bot_GN\bot_gn.log",
     encoding="utf-8",
     format="%(asctime)s | %(levelname)s | %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S %p",
@@ -17,29 +17,15 @@ log.basicConfig(
 )
 
 
-def action(execution=None):
+def action():
     """Função principal"""
-    # Uncomment to silence Maestro errors when disconnected
-    # if bot.maestro:
-    #     bot.maestro.RAISE_NOT_CONNECTED = False
-    #
-    # Fetch the Activity ID from the task:
-    # task = bot.maestro.get_task(execution.task_id)
-    # activity_id = task.activity_id
-    #
-    # Uncomment to mark this task as finished on BotMaestro
-    # bot.maestro.finish_task(
-    #     task_id=execution.task_id,
-    #     status=AutomationTaskFinishStatus.SUCCESS,
-    #     message="Task Finished OK."
-    # )
-
     sap_user = os.getenv("SAP_USER")
     sap_pswd = os.getenv("SAP_PSWD")
 
     login_sap(user=sap_user, password=sap_pswd)
     exec_transacao(transaction_code="ZGN103")
     exec_grupo_gn()
+    close_sap()
 
 
 def login_sap(user, password):
@@ -91,8 +77,7 @@ def load_file(file_path):
     try:
         os.path.exists(path=file_path)
         with open(file_path, "rb") as file_open:
-            print("Arquivo carregado:", file_path)
-
+            log.info(f"Arquivo carregado: {file_path}")
         loaded_file = pd.read_excel(io=file_path, dtype="unicode")
         # Renomeando coluna
         loaded_file = loaded_file.rename(
@@ -101,26 +86,25 @@ def load_file(file_path):
 
         return loaded_file, file_open
     except FileNotFoundError:
-        print("Arquivo não encontrado!")
+        log.error("Arquivo não encontrado!")
 
 
 def exec_grupo_gn():
     """Função de preenchimento de grupo GN - ZGN103"""
 
-    xlsx, file_open = load_file(file_path=r"C:\ArquivosSuspeitos\GRP_GN.xlsx")
+    xlsx, file_open = load_file(file_path=r"C:\Bot_GN\GRP_GN.xlsx")
 
     for line in xlsx.values:
         bot.paste(line[0])
         bot.key_f8(wait=100)
 
         if bot.find_text("ja_esta_cadastrado", waiting_time=10000):
-            log.info(f"{line[0]}, já está cadastrado.")
+            log.warning(f"{line[0]}, já está cadastrado.")
             continue
-
-        if bot.find_text("campo_descricao", waiting_time=3000):
-            log.info(f"Cadastrando {line[0]}")
+        elif bot.find_text("campo_descricao", waiting_time=10000):
             bot.click_relative(98, 1)
-            bot.paste(line[1], wait=100)
+            log.info(f"Cadastrando {line[0]}")
+            bot.paste(line[1])
             bot.type_down(wait=100)
             bot.shift_tab(wait=100)
             bot.paste(line[2], wait=100)
@@ -128,7 +112,7 @@ def exec_grupo_gn():
             bot.wait(200)
 
             if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
-                log.warning(f"Cliente {line[2]} não cadastrado no GN")
+                log.error(f"Cliente {line[2]} não cadastrado no GN")
                 bot.key_esc()
                 if not bot.find_text(
                     "encerrar_processamento", waiting_time=3000
@@ -140,15 +124,20 @@ def exec_grupo_gn():
 
             log.info(f"{line[0]} cadastrado com suceeso!")
             continue
+
     file_open.close()
 
-    # Encerra SAP
+
+def close_sap():
+    """Encerra instancia SAP"""
+
     bot.key_f12()
     bot.hold_shift()
     bot.key_f3()
     bot.release_shift()
     bot.tab()
     bot.key_enter()
+    log.info('Processamento encerrado!')
 
 
 def not_found(label):
