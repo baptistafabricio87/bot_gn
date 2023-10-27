@@ -2,23 +2,34 @@ import os
 import logging as log
 import pandas as pd
 from botcity.core import DesktopBot
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
+from datetime import date
+
+
+load_dotenv(find_dotenv())
+
+current_date = date.today().strftime("%d_%m_%Y")
+
+file_name_log = rf"C:\Bot_GN\bot_gn_{current_date}.log"
+
+if os.path.exists(file_name_log):
+    print("Arquivo de log já existe.")
+else:
+    print("Arquivo de log não existe. \nGerando novo log.")
+    log.basicConfig(
+        filename=file_name_log,
+        encoding="utf-8",
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        datefmt="%m/%d/%Y %I:%M:%S %p",
+        level=log.INFO,
+    )
 
 bot = DesktopBot()
-
-load_dotenv()
-
-log.basicConfig(
-    filename=r"C:\Bot_GN\bot_gn.log",
-    encoding="utf-8",
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S %p",
-    level=log.INFO,
-)
 
 
 def action():
     """Função principal"""
+
     sap_user = os.getenv("SAP_USER")
     sap_pswd = os.getenv("SAP_PSWD")
 
@@ -38,18 +49,17 @@ def login_sap(user, password):
 
     bot.execute(r"saplogon.exe")
 
-    if bot.find_text("PD4", waiting_time=10000):
+    if bot.find_text("PD4", waiting_time=5000):
         bot.double_click(wait_after=3000)
-    elif bot.find_text("PD4_azul", waiting_time=10000):
+    elif bot.find_text("PD4_azul", waiting_time=5000):
         bot.double_click(wait_after=3000)
     else:
         not_found("PD4")
 
-    bot.paste(user)
-    bot.tab(wait=1000)
-    bot.paste(password)
-    bot.key_enter()
-    bot.wait(1000)
+    bot.type_keys(user, wait=200)
+    bot.tab()
+    bot.type_keys(password, wait=200)
+    bot.key_enter(wait=3000)
 
 
 def exec_transacao(transaction_code):
@@ -62,17 +72,16 @@ def exec_transacao(transaction_code):
     if not bot.find("campo_transacao", matching=0.97, waiting_time=5000):
         not_found("campo_transacao")
     bot.click_relative(40, 10)
-    bot.wait(1000)
     bot.type_keys(transaction_code)
     bot.key_enter(wait=1000)
 
 
 def load_file(file_path):
-    '''Carrega arquivo GRP_GN e o retorna para cadastro no SAP
+    """Carrega arquivo GRP_GN e o retorna para cadastro no SAP
 
     Args:
         file_path (_str_): Caminho do arquivo.
-    '''
+    """
 
     try:
         os.path.exists(path=file_path)
@@ -95,33 +104,33 @@ def exec_grupo_gn():
     xlsx, file_open = load_file(file_path=r"C:\Bot_GN\GRP_GN.xlsx")
 
     for line in xlsx.values:
-        bot.paste(line[0])
-        bot.key_f8(wait=100)
+        bot.type_keys(line[0])
+        bot.key_f8()
 
-        if bot.find_text("ja_esta_cadastrado", waiting_time=10000):
+        if bot.find_text("ja_esta_cadastrado", waiting_time=5000):
             log.warning(f"{line[0]}, já está cadastrado.")
             continue
-        elif bot.find_text("campo_descricao", waiting_time=10000):
-            bot.click_relative(98, 1)
+
+        if bot.find_text("campo_descricao", waiting_time=5000):
             log.info(f"Cadastrando {line[0]}")
-            bot.paste(line[1])
-            bot.type_down(wait=100)
-            bot.shift_tab(wait=100)
-            bot.paste(line[2], wait=100)
-            bot.type_keys(keys=["ctrl", "s"])
-            bot.wait(200)
+            bot.click_relative(98, 1)
+            # bot.click_relative(98, 1)
+            bot.type_keys(line[1], wait=200)
+            bot.type_down()
+            bot.shift_tab()
+            bot.type_keys(line[2], wait=200)
+            bot.type_keys(keys=["ctrl", "s"], wait=200)
 
             if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
                 log.error(f"Cliente {line[2]} não cadastrado no GN")
                 bot.key_esc()
                 if not bot.find_text(
-                    "encerrar_processamento", waiting_time=3000
+                    "encerrar_processamento", waiting_time=5000
                 ):
                     not_found("encerrar_processamento")
                 bot.click_relative(38, 57)
                 log.error(f"Processamento encerrado para {line[0]}")
                 continue
-
             log.info(f"{line[0]} cadastrado com suceeso!")
             continue
 
@@ -137,12 +146,13 @@ def close_sap():
     bot.release_shift()
     bot.tab()
     bot.key_enter()
-    log.info('Processamento encerrado!')
+    log.info("Processamento encerrado!")
 
 
 def not_found(label):
-    print(f"Element not found: {label}")
+    print(f"Elemento nao encontrado: {label}")
+    log.warning(f"Elemento nao encontrado: {label}")
 
 
 if __name__ == "__main__":
-    action(bot)
+    action()
