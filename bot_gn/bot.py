@@ -3,27 +3,27 @@ import logging as log
 import pandas as pd
 from botcity.core import DesktopBot
 from dotenv import load_dotenv, find_dotenv
-from datetime import date
+from datetime import date, datetime
 
-
+# Carrega arquivo de configuracao
 load_dotenv(find_dotenv())
 
+# Define data para compor nome do arquivo de log
 current_date = date.today().strftime("%d_%m_%Y")
 
+# Define caminho para criar arquivo de log
 file_name_log = rf"C:\Bot_GN\bot_gn_{current_date}.log"
 
-if os.path.exists(file_name_log):
-    print("Arquivo de log já existe.")
-else:
-    print("Arquivo de log não existe. \nGerando novo log.")
-    log.basicConfig(
-        filename=file_name_log,
-        encoding="utf-8",
-        format="%(asctime)s | %(levelname)s | %(message)s",
-        datefmt="%m/%d/%Y %I:%M:%S %p",
-        level=log.INFO,
-    )
+# Configura arquivo de log
+log.basicConfig(
+    filename=file_name_log,
+    encoding="utf-8",
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%m/%d/%Y %I:%M:%S %p",
+    level=log.INFO,
+)
 
+# Instancia objeto DesktopBot
 bot = DesktopBot()
 
 
@@ -56,9 +56,9 @@ def login_sap(user, password):
     else:
         not_found("PD4")
 
-    bot.type_keys(user, wait=200)
-    bot.tab()
-    bot.type_keys(password, wait=200)
+    bot.type_keys(user)
+    bot.tab(wait=500)
+    bot.type_keys(password)
     bot.key_enter(wait=3000)
 
 
@@ -88,10 +88,6 @@ def load_file(file_path):
         with open(file_path, "rb") as file_open:
             log.info(f"Arquivo carregado: {file_path}")
         loaded_file = pd.read_excel(io=file_path, dtype="unicode")
-        # Renomeando coluna
-        loaded_file = loaded_file.rename(
-            columns={"Grupo - Mundo TIM GN": "grp_cliente"}
-        )
 
         return loaded_file, file_open
     except FileNotFoundError:
@@ -102,38 +98,36 @@ def exec_grupo_gn():
     """Função de preenchimento de grupo GN - ZGN103"""
 
     xlsx, file_open = load_file(file_path=r"C:\Bot_GN\GRP_GN.xlsx")
+    log.info(f"Inicio do processamento: {datetime.now().strftime('%H:%M:%S')}")
 
     for line in xlsx.values:
         bot.type_keys(line[0])
-        bot.key_f8()
+        bot.key_f8(wait=200)
 
         if bot.find_text("ja_esta_cadastrado", waiting_time=5000):
             log.warning(f"{line[0]}, já está cadastrado.")
             continue
 
-        if bot.find_text("campo_descricao", waiting_time=5000):
-            log.info(f"Cadastrando {line[0]}")
-            bot.click_relative(98, 1)
-            # bot.click_relative(98, 1)
-            bot.type_keys(line[1], wait=200)
-            bot.type_down()
-            bot.shift_tab()
-            bot.type_keys(line[2], wait=200)
-            bot.type_keys(keys=["ctrl", "s"], wait=200)
+        log.info(f"Cadastrando {line[0]}")
+        bot.type_keys(line[1])
+        bot.type_down(wait=100)
+        bot.shift_tab(wait=100)
+        bot.type_keys(line[2])
+        bot.type_keys(keys=["ctrl", "s"])
 
-            if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
-                log.error(f"Cliente {line[2]} não cadastrado no GN")
-                bot.key_esc()
-                if not bot.find_text(
-                    "encerrar_processamento", waiting_time=5000
-                ):
-                    not_found("encerrar_processamento")
-                bot.click_relative(38, 57)
-                log.error(f"Processamento encerrado para {line[0]}")
-                continue
-            log.info(f"{line[0]} cadastrado com suceeso!")
+        if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
+            log.error(f"Cliente {line[2]} não cadastrado no GN")
+            bot.key_esc()
+            if not bot.find_text("encerrar_processamento", waiting_time=5000):
+                not_found("encerrar_processamento")
+            bot.click_relative(38, 57)
+            log.error(f"Processamento encerrado para {line[0]}")
             continue
 
+        log.info(f"{line[0]} cadastrado com suceeso!")
+        continue
+
+    log.info(f"Fim do processamento: {datetime.now().strftime('%H:%M:%S')}")
     file_open.close()
 
 
