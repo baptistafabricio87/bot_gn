@@ -1,5 +1,5 @@
 from os import path
-from setuptools import find_packages  # setup
+from setuptools import find_packages, setup
 from cx_Freeze import setup as cx_setup, Executable
 import sys
 
@@ -52,21 +52,21 @@ cx_setup(
 )
 
 
-# setup(
-#     name="bot_gn",
-#     version=version,
-#     description="Python package for a BotCity bot.",
-#     long_description=readme,
-#     long_description_content_type='text/markdown',
-#     packages=find_packages(exclude=['docs', 'tests']),
-#     include_package_data=True,
-#     package_data={
-#         "bot_gn": [
-#             # When adding files here, remember to update MANIFEST.in as well,
-#             # or else they will not be included in the distribution on PyPI!
-#             # 'path/to/data_file',
-#             'resources',
-#         ]
-#     },
-#     install_requires=requirements,
-# )
+setup(
+    name="bot_gn",
+    version=version,
+    description="Python package for a BotCity bot.",
+    long_description=readme,
+    long_description_content_type='text/markdown',
+    packages=find_packages(exclude=['docs', 'tests']),
+    include_package_data=True,
+    package_data={
+        "bot_gn": [
+            # When adding files here, remember to update MANIFEST.in as well,
+            # or else they will not be included in the distribution on PyPI!
+            # 'path/to/data_file',
+            'resources',
+        ]
+    },
+    install_requires=requirements,
+)

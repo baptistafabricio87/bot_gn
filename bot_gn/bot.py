@@ -1,9 +1,11 @@
-import os
 import logging as log
-import pandas as pd
-from botcity.core import DesktopBot
-from dotenv import load_dotenv, find_dotenv
+import os
 from datetime import date, datetime
+
+import pandas as pd
+import pyautogui
+from botcity.core import DesktopBot
+from dotenv import find_dotenv, load_dotenv
 
 # Carrega arquivo de configuracao
 load_dotenv(find_dotenv())
@@ -12,7 +14,7 @@ load_dotenv(find_dotenv())
 current_date = date.today().strftime("%d_%m_%Y")
 
 # Define caminho para criar arquivo de log
-file_name_log = rf"C:\Bot_GN\bot_gn_{current_date}.log"
+file_name_log = rf"C:\BOT_GN\bot_gn_{current_date}.log"
 
 # Configura arquivo de log
 log.basicConfig(
@@ -86,18 +88,28 @@ def load_file(file_path):
     try:
         os.path.exists(path=file_path)
         with open(file_path, "rb") as file_open:
-            log.info(f"Arquivo carregado: {file_path}")
-        loaded_file = pd.read_excel(io=file_path, dtype="unicode")
-
+            loaded_file = pd.read_excel(io=file_path, dtype="unicode")
         return loaded_file, file_open
     except FileNotFoundError:
         log.error("Arquivo não encontrado!")
 
 
+def screenshot(grp):
+    """Salva screenshot com nome dinâmico
+    grupo_dia_mes_ano_horaminuto
+    "GRPXXXXXXX_06_11_2023_2245.png"
+    """
+
+    nome_arquivo = datetime.now().strftime(f"{grp}_%d_%m_%Y_%H%M")
+    pic = pyautogui.screenshot()
+    pic.save(rf"C:\BOT_GN\prints\{nome_arquivo}.png")
+    bot.wait(1000)
+
+
 def exec_grupo_gn():
     """Função de preenchimento de grupo GN - ZGN103"""
 
-    xlsx, file_open = load_file(file_path=r"C:\Bot_GN\GRP_GN.xlsx")
+    xlsx, file_open = load_file(file_path=r"C:\BOT_GN\GRP_GN.xlsx")
     log.info(f"Inicio do processamento: {datetime.now().strftime('%H:%M:%S')}")
 
     for line in xlsx.values:
@@ -105,18 +117,18 @@ def exec_grupo_gn():
         bot.key_f8(wait=200)
 
         if bot.find_text("ja_esta_cadastrado", waiting_time=5000):
-            log.warning(f"{line[0]}, já está cadastrado.")
+            log.warning(f"{line[0]} | já está cadastrado.")
             continue
 
-        log.info(f"Cadastrando {line[0]}")
         bot.type_keys(line[1])
         bot.type_down(wait=100)
         bot.shift_tab(wait=100)
         bot.type_keys(line[2])
+        bot.key_enter()
         bot.type_keys(keys=["ctrl", "s"])
 
         if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
-            log.error(f"Cliente {line[2]} não cadastrado no GN")
+            log.error(f"Cliente | {line[2]} | não cadastrado no GN")
             bot.key_esc()
             if not bot.find_text("encerrar_processamento", waiting_time=5000):
                 not_found("encerrar_processamento")
@@ -124,7 +136,8 @@ def exec_grupo_gn():
             log.error(f"Processamento encerrado para {line[0]}")
             continue
 
-        log.info(f"{line[0]} cadastrado com suceeso!")
+        log.info(f"{line[0]} | cadastrado com suceeso!")
+        screenshot(line[0])
         continue
 
     log.info(f"Fim do processamento: {datetime.now().strftime('%H:%M:%S')}")

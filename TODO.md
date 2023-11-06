@@ -1,17 +1,16 @@
-# BOT GN
-
-## TODO
+# TODO
 
 ### Acessar transacao ZGN103:
 - localiza campo Grupo
-	- insere grupo
-    - tecla F8
-    - verifica: 
-	- se 'Grupo GRPXXXXXXX gravado com sucesso.' pula para o proximo
-	- senão preenche campos, Descricao(Nome), 
-	- seta para baixo, Shift+Tab
-	- Cod. Cliente(SAP Cliente).
-	- salva (Ctrl+S)
+	- Insere grupo
+    - Tecla F8
+    - Verifica: 
+		- Se 'Grupo GRPXXXXXXX gravado com sucesso.'
+	- Pule para o proximo
+		- Senão preenche campos: 
+			- Descricao(Nome)
+			- Cod. Cliente(SAP Cliente).
+			- salva (Ctrl+S)
 
 ### Gerar log do processamento
 
@@ -19,3 +18,8 @@
 	- SUCESSO
 	- SAP CLIENTE NÃO CADASTRADO
 	- GRUPO EXISTENTE
+
+### Salva screenshot com nome dinâmico ao termino do cadastro.
+
+- Formato do arquivo com data e hora:
+	- "GRPXXXXXXX_06_11_2023_2245.png"
