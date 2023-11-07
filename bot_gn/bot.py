@@ -99,10 +99,15 @@ def screenshot(grp):
     grupo_dia_mes_ano_horaminuto
     "GRPXXXXXXX_06_11_2023_2245.png"
     """
+    if not os.path.exists(r"C:\BOT_GN\prints"):
+        os.mkdir(r"C:\BOT_GN\prints")
 
-    nome_arquivo = datetime.now().strftime(f"{grp}_%d_%m_%Y_%H%M")
+    if not os.path.exists(rf"C:\BOT_GN\prints\{current_date}"):
+        os.mkdir(rf"C:\BOT_GN\prints\{current_date}")
+
+    pic_name = datetime.now().strftime(f"{grp}_%d_%m_%Y_%H%M")
     pic = pyautogui.screenshot()
-    pic.save(rf"C:\BOT_GN\prints\{nome_arquivo}.png")
+    pic.save(rf"C:\BOT_GN\prints\{current_date}\{pic_name}.png")
     bot.wait(1000)
 
 
@@ -114,17 +119,18 @@ def exec_grupo_gn():
 
     for line in xlsx.values:
         bot.type_keys(line[0])
-        bot.key_f8(wait=200)
+        bot.key_f8(wait=100)
 
         if bot.find_text("ja_esta_cadastrado", waiting_time=5000):
             log.warning(f"{line[0]} | já está cadastrado.")
             continue
 
         bot.type_keys(line[1])
-        bot.type_down(wait=100)
-        bot.shift_tab(wait=100)
+        bot.type_down(wait=50)
+        bot.shift_tab(wait=50)
         bot.type_keys(line[2])
-        bot.key_enter()
+        bot.key_enter(wait=50)
+        screenshot(line[0])
         bot.type_keys(keys=["ctrl", "s"])
 
         if bot.find_text("cliente_nao_cadastrado", waiting_time=3000):
@@ -137,7 +143,6 @@ def exec_grupo_gn():
             continue
 
         log.info(f"{line[0]} | cadastrado com suceeso!")
-        screenshot(line[0])
         continue
 
     log.info(f"Fim do processamento: {datetime.now().strftime('%H:%M:%S')}")
