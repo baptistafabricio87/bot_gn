@@ -122,6 +122,9 @@ def exec_grupo_gn():
         bot.key_f8(wait=100)
 
         if bot.find_text("ja_esta_cadastrado", waiting_time=5000):
+            bot.key_f7(wait=200)
+            screenshot(line[0])
+            bot.key_esc(wait=200)
             log.warning(f"{line[0]} | já está cadastrado.")
             continue
 
